@@ -13,13 +13,13 @@ type TextFileHandler struct {
 	File             *os.File
 	Mutext           sync.RWMutex
 	PageSize         int
-	PageCount        int
-	DeallocatedPages []int
+	PageCount        uint
+	DeallocatedPages []uint
 }
 
 type PageHeader struct {
 	PageLSN  uint64
-	PageID   int
+	PageID   uint
 	PageType string
 }
 
@@ -68,7 +68,7 @@ func NewTextFileHandler(FilePath string) (*TextFileHandler, error) {
 		File:             File,
 		PageSize:         DefaultPageSize,
 		PageCount:        1,
-		DeallocatedPages: []int{},
+		DeallocatedPages: []uint{},
 	}
 
 	// Load existing metadata
@@ -116,7 +116,7 @@ func (self *TextFileHandler) LoadMetadata() error {
 				// Parse comma-separated list of free pages
 				for _, Page := range strings.Split(Value, ",") {
 
-					var PageID int
+					var PageID uint
 					fmt.Sscanf(Page, "%d", &PageID)
 					self.DeallocatedPages = append(self.DeallocatedPages, PageID)
 
@@ -131,7 +131,7 @@ func (self *TextFileHandler) LoadMetadata() error {
 
 }
 
-func (self *TextFileHandler) ReadPage(PageID int) (*Page, error) {
+func (self *TextFileHandler) ReadPage(PageID uint) (*Page, error) {
 
 	self.Mutext.RLock()
 	defer self.Mutext.RUnlock()
@@ -300,14 +300,14 @@ func (self *TextFileHandler) Close() error {
 
 }
 
-func (self *TextFileHandler) AllocatePage() (int, error) {
+func (self *TextFileHandler) AllocatePage() (uint, error) {
 
 	self.Mutext.Lock()
 	self.Mutext.Unlock()
 
 	if len(self.DeallocatedPages) > 0 {
 
-		var DeallocatedPageID int = self.DeallocatedPages[0]
+		var DeallocatedPageID uint = self.DeallocatedPages[0]
 		self.DeallocatedPages = self.DeallocatedPages[1:]
 
 		return DeallocatedPageID, nil
