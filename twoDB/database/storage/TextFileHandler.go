@@ -286,3 +286,60 @@ func (self *TextFileHandler) WritePage(Page *Page) error {
 	return nil
 
 }
+
+func (self *TextFileHandler) Close() error {
+
+	self.Mutext.Lock()
+	defer self.Mutext.Unlock()
+
+	if self.File != nil {
+		return self.File.Close()
+	}
+
+	return nil
+
+}
+
+func (self *TextFileHandler) AllocatePage() (int, error) {
+
+	self.Mutext.Lock()
+	self.Mutext.Unlock()
+
+	if len(self.DeallocatedPages) > 0 {
+
+		var DeallocatedPageID int = self.DeallocatedPages[0]
+		self.DeallocatedPages = self.DeallocatedPages[1:]
+
+		return DeallocatedPageID, nil
+
+	}
+
+	self.PageCount++
+
+	self.File.Seek(0, 0)
+
+	var Content []byte
+	var Error error
+	Content, Error = os.ReadFile(self.FilePath)
+	if Error != nil {
+		return 0, fmt.Errorf("Failed to read database file: %w", Error)
+	}
+
+	var FileContent string = string(Content)
+
+	var PageCountString string = fmt.Sprintf("PAGES=%d", self.PageCount)
+	var StringToReplace string = fmt.Sprintf("PAGES=%d", self.PageCount-1)
+	FileContent = strings.Replace(FileContent, StringToReplace, PageCountString, 1)
+
+	self.File.Seek(0, 0)
+	if Error = self.File.Truncate(0); Error != nil {
+		return 0, fmt.Errorf("Failed to truncate database file: %w", Error)
+	}
+
+	if _, Error = self.File.WriteString(FileContent); Error != nil {
+		return 0, fmt.Errorf("Failed to update database file: %w", Error)
+	}
+
+	return self.PageCount, nil
+
+}
