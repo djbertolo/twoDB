@@ -38,7 +38,7 @@ func NewTextFileHandler(FilePath string) (*TextFileHandler, error) {
 	var Error error
 
 	// Check for file
-	if _, Error := os.Stat(FilePath); os.IsNotExist(Error) {
+	if _, Error = os.Stat(FilePath); os.IsNotExist(Error) {
 
 		// Create new file
 		File, Error = os.Create(FilePath)
@@ -47,8 +47,9 @@ func NewTextFileHandler(FilePath string) (*TextFileHandler, error) {
 		}
 
 		// Initialize new file content
-		InitalContent := fmt.Sprintf("%s\nPAGESIZE=%d\nENCODING=UTF-8\nVERSION=1.0\nPAGES=1\n\n", HeaderSection, DefaultPageSize)
-		if _, Error := File.WriteString(InitalContent); Error != nil {
+		var InitalContent string
+		InitalContent = fmt.Sprintf("%s\nPAGESIZE=%d\nENCODING=UTF-8\nVERSION=1.0\nPAGES=1\n\n", HeaderSection, DefaultPageSize)
+		if _, Error = File.WriteString(InitalContent); Error != nil {
 			File.Close()
 			return nil, fmt.Errorf("Failed to intialize database file: %w", Error)
 		}
@@ -96,9 +97,10 @@ func (self *TextFileHandler) LoadMetadata() error {
 			continue
 		} else if strings.HasPrefix(CurrentLine, PageSection) {
 			InHeader = false
-			continue
+			break
 		}
 
+		// If CurrentLine has Metadata
 		if InHeader && CurrentLine != "" {
 
 			var Metadata []string = strings.SplitN(CurrentLine, "=", 2)
@@ -108,11 +110,14 @@ func (self *TextFileHandler) LoadMetadata() error {
 
 			var Key, Value string = strings.TrimSpace(Metadata[0]), strings.TrimSpace(Metadata[1])
 			switch Key {
+
 			case "PAGESIZE":
 				fmt.Sscanf(Value, "%d", &self.PageSize)
+
 			case "PAGES":
 				fmt.Sscanf(Value, "%d", &self.PageCount)
-			case "FreePages":
+
+			case "DEALLOCATED_PAGES":
 				// Parse comma-separated list of free pages
 				for _, Page := range strings.Split(Value, ",") {
 
@@ -143,7 +148,6 @@ func (self *TextFileHandler) ReadPage(PageID uint) (*Page, error) {
 	self.File.Seek(0, 0)
 	var Scanner *bufio.Scanner = bufio.NewScanner(self.File)
 
-	// Find the page section
 	var InPage bool = false
 
 	var PageHeader *PageHeader = &PageHeader{
@@ -165,7 +169,6 @@ func (self *TextFileHandler) ReadPage(PageID uint) (*Page, error) {
 			continue
 
 		} else if InPage && strings.HasPrefix(CurrentLine, PageSection) {
-			// Next Page found, end of current Page
 			break
 		}
 
@@ -239,7 +242,9 @@ func (self *TextFileHandler) WritePage(Page *Page) error {
 	var PageHeader string = fmt.Sprintf("# PAGE \nPageID: %d\nLSN: %dType: %s\n", Page.Header.PageID, Page.Header.PageLSN, Page.Header.PageType)
 	var PageContent string = PageHeader
 
-	for Key, Value := range Page.Data {
+	var Key string
+	var Value string
+	for Key, Value = range Page.Data {
 		PageContent += fmt.Sprintf("%s: %s\n", Key, Value)
 	}
 
