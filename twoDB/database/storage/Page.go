@@ -6,8 +6,8 @@ import (
 )
 
 type Record struct {
-	PageIndex uint
-	Fields    []string
+	EntryIndex uint
+	Fields     []string
 }
 
 func (self *Page) AddRecord(Record *Record) error {
@@ -16,41 +16,41 @@ func (self *Page) AddRecord(Record *Record) error {
 		return fmt.Errorf("Not a Data Page")
 	}
 
-	var PageIndex uint = 0
-	var PageIndexString string
+	var EntryIndex uint = 0
+	var EntryIndexString string
 	var KeyExists bool
-	if PageIndexString, KeyExists = self.Data["PageIndex"]; KeyExists {
-		fmt.Sscanf(PageIndexString, "%d", &PageIndex)
+	if EntryIndexString, KeyExists = self.Data["EntryIndex"]; KeyExists {
+		fmt.Sscanf(EntryIndexString, "%d", &EntryIndex)
 	}
 
-	PageIndex++
-	self.Data["PageIndex"] = fmt.Sprintf("%d", PageIndex)
+	EntryIndex++
+	self.Data["EntryIndex"] = fmt.Sprintf("%d", EntryIndex)
 
-	var PageKey string = fmt.Sprintf("PageIndex%d", PageIndex)
-	self.Data[PageKey] = strings.Join(Record.Fields, "|")
+	var EntryKey string = fmt.Sprintf("EntryIndex%d", EntryIndex)
+	self.Data[EntryKey] = strings.Join(Record.Fields, "|")
 
 	return nil
 
 }
 
-func (self *Page) GetRecord(PageIndex uint) (*Record, error) {
+func (self *Page) GetRecord(EntryIndex uint) (*Record, error) {
 
 	if self.Header.PageType != "Data" {
 		return nil, fmt.Errorf("Not a data page")
 	}
 
-	var PageKey string = fmt.Sprintf("PageIndex%d", PageIndex)
+	var EntryKey string = fmt.Sprintf("EntryIndex%d", EntryIndex)
 	var RecordString string
 	var RecordExists bool
-	RecordString, RecordExists = self.Data[PageKey]
+	RecordString, RecordExists = self.Data[EntryKey]
 
 	if !RecordExists {
-		return nil, fmt.Errorf("Record not found: PageIndex %d", PageIndex)
+		return nil, fmt.Errorf("Record not found: PageIndex %d", EntryIndex)
 	}
 
 	return &Record{
-		PageIndex: PageIndex,
-		Fields:    strings.Split(RecordString, "|"),
+		EntryIndex: EntryIndex,
+		Fields:     strings.Split(RecordString, "|"),
 	}, nil
 
 }
@@ -63,25 +63,25 @@ func (self *Page) GetAllRecords() ([]*Record, error) {
 
 	var Records []*Record
 
-	var PageIndex uint
-	var PageIndexString string
-	var PageIndexExists bool
-	if PageIndexString, PageIndexExists = self.Data["PageIndex"]; PageIndexExists {
-		fmt.Sscanf(PageIndexString, "%d", &PageIndex)
+	var EntryIndex uint
+	var EntryIndexString string
+	var EntryIndexExists bool
+	if EntryIndexString, EntryIndexExists = self.Data["EntryIndex"]; EntryIndexExists {
+		fmt.Sscanf(EntryIndexString, "%d", &EntryIndex)
 	}
 
 	var Index uint
-	for Index = 1; Index < PageIndex; Index++ {
+	for Index = 1; Index < EntryIndex; Index++ {
 
-		var PageKey string = fmt.Sprintf("PageIndex%d", Index)
+		var EntryKey string = fmt.Sprintf("EntryIndex%d", Index)
 		var RecordString string
 		var RecordExists bool
 
-		if RecordString, RecordExists = self.Data[PageKey]; RecordExists {
+		if RecordString, RecordExists = self.Data[EntryKey]; RecordExists {
 
 			var RetrievedRecord *Record = &Record{
-				PageIndex: Index,
-				Fields:    strings.Split(RecordString, "|"),
+				EntryIndex: Index,
+				Fields:     strings.Split(RecordString, "|"),
 			}
 
 			Records = append(Records, RetrievedRecord)
