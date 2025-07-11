@@ -5,91 +5,63 @@ import (
 	"strings"
 )
 
+// Record represents a single row or entry in a data page.
 type Record struct {
 	EntryIndex uint
 	Fields     []string
 }
 
-func (self *Page) AddRecord(Record *Record) error {
-
+// AddRecord adds a new record to a data page.
+func (self *Page) AddRecord(Record *Record) (uint, error) {
 	if self.Header.PageType != "Data" {
-		return fmt.Errorf("Not a Data Page")
+		return 0, fmt.Errorf("Not a Data Page")
 	}
 
 	var EntryIndex uint = 0
-	var EntryIndexString string
-	var KeyExists bool
-	if EntryIndexString, KeyExists = self.Data["EntryIndex"]; KeyExists {
+	if EntryIndexString, KeyExists := self.Data["EntryIndex"]; KeyExists {
 		fmt.Sscanf(EntryIndexString, "%d", &EntryIndex)
 	}
 
 	EntryIndex++
 	self.Data["EntryIndex"] = fmt.Sprintf("%d", EntryIndex)
 
-	var EntryKey string = fmt.Sprintf("EntryIndex%d", EntryIndex)
+	var EntryKey string = fmt.Sprintf("Entry-%d", EntryIndex)
 	self.Data[EntryKey] = strings.Join(Record.Fields, "|")
 
-	return nil
-
+	Record.EntryIndex = EntryIndex
+	return EntryIndex, nil
 }
 
+// GetRecord retrieves a record by its index from a data page.
 func (self *Page) GetRecord(EntryIndex uint) (*Record, error) {
-
 	if self.Header.PageType != "Data" {
 		return nil, fmt.Errorf("Not a data page")
 	}
 
-	var EntryKey string = fmt.Sprintf("EntryIndex%d", EntryIndex)
+	var EntryKey string = fmt.Sprintf("Entry-%d", EntryIndex)
 	var RecordString string
 	var RecordExists bool
 	RecordString, RecordExists = self.Data[EntryKey]
 
 	if !RecordExists {
-		return nil, fmt.Errorf("Record not found: PageIndex %d", EntryIndex)
+		return nil, fmt.Errorf("Record not found on page: EntryIndex %d", EntryIndex)
 	}
 
 	return &Record{
 		EntryIndex: EntryIndex,
 		Fields:     strings.Split(RecordString, "|"),
 	}, nil
-
 }
 
-func (self *Page) GetAllRecords() ([]*Record, error) {
-
+// DeleteRecord removes a record from a page.
+func (self *Page) DeleteRecord(EntryIndex uint) error {
 	if self.Header.PageType != "Data" {
-		return nil, fmt.Errorf("Not a data page")
+		return fmt.Errorf("Not a data page")
 	}
-
-	var Records []*Record
-
-	var EntryIndex uint
-	var EntryIndexString string
-	var EntryIndexExists bool
-	if EntryIndexString, EntryIndexExists = self.Data["EntryIndex"]; EntryIndexExists {
-		fmt.Sscanf(EntryIndexString, "%d", &EntryIndex)
+	var EntryKey string = fmt.Sprintf("Entry-%d", EntryIndex)
+	if _, exists := self.Data[EntryKey]; !exists {
+		return fmt.Errorf("Record to delete not found on page: EntryIndex %d", EntryIndex)
 	}
-
-	var Index uint
-	for Index = 1; Index < EntryIndex; Index++ {
-
-		var EntryKey string = fmt.Sprintf("EntryIndex%d", Index)
-		var RecordString string
-		var RecordExists bool
-
-		if RecordString, RecordExists = self.Data[EntryKey]; RecordExists {
-
-			var RetrievedRecord *Record = &Record{
-				EntryIndex: Index,
-				Fields:     strings.Split(RecordString, "|"),
-			}
-
-			Records = append(Records, RetrievedRecord)
-
-		}
-
-	}
-
-	return Records, nil
-
+	delete(self.Data, EntryKey)
+	return nil
 }
