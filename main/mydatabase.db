@@ -1,0 +1,25 @@
+# DATABASE HEADER
+PAGESIZE=4096
+ENCODING=UTF-8
+VERSION=1.0
+PAGES=0
+
+
+# PAGE
+PageID: 1
+LSN: 0
+Type: Index
+IsLeaf: true
+Keys: user:2
+Pointers: 3:1
+# PAGE
+PageID: 2
+LSN: 0
+Type: Data
+EntryIndex: 1
+# PAGE
+PageID: 3
+LSN: 0
+Type: Data
+Entry-1: user:2|Jane Doe
+EntryIndex: 1
